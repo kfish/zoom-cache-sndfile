@@ -18,6 +18,7 @@ import Data.Default
 import qualified Data.Vector.Storable as SV
 import Data.ZoomCache
 import Data.ZoomCache.Dump
+import Data.ZoomCache.PCM
 import qualified Sound.File.Sndfile as SF
 import qualified Sound.File.Sndfile.Buffer.Vector as SFV
 import System.Console.GetOpt
@@ -127,22 +128,25 @@ zoomGenHandler = do
 zoomWriteFile :: Config -> [FilePath] -> IO ()
 zoomWriteFile _          []       = return ()
 zoomWriteFile Config{..} (path:_)
-    | intData   = w ZInt ints path
-    | otherwise = w ZDouble doubles path
+    | intData   = w ints path
+    | otherwise = w pcmDoubles path
     where
-    w :: (ZoomWrite a, ZoomWrite (TimeStamp, a))
-      => TrackType -> [a] -> FilePath -> IO ()
-    w ztype d
-        | variable  = withFileWrite (oneTrack ztype VariableDR rate' label)
+    w :: (ZoomReadable a, ZoomWrite a, ZoomWrite (TimeStamp, a))
+      => [a] -> FilePath -> IO ()
+    w d
+        | variable  = withFileWrite (oneTrack (head d) VariableDR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) (zip (map TS [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack ztype ConstantDR rate' label)
+        | otherwise = withFileWrite (oneTrack (head d) ConstantDR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) d)
     rate' = fromInteger rate
     sW = setWatermark 1 wmLevel
 
 ------------------------------------------------------------
+
+pcmDoubles :: [PCM Double]
+pcmDoubles = map PCM doubles
 
 doubles :: [Double]
 doubles = take 10000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
@@ -218,7 +222,7 @@ encodeFile path = do
     h <- SF.openFile path SF.ReadMode info
     let sfRate = fromIntegral (SF.samplerate . SF.hInfo $ h)
 
-    z <- openWrite (oneTrack ZDouble ConstantDR sfRate "pcm")
+    z <- openWrite (oneTrack (undefined :: PCM Double) ConstantDR sfRate "pcm")
              True -- doRaw
              (path ++ ".zoom")
     z' <- foldFrames encodeBuffer z h 1024
