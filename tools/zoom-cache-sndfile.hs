@@ -10,7 +10,7 @@ module Main (
 ) where
 
 import Control.Monad (foldM)
-import Control.Monad.Trans (liftIO)
+import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Default
@@ -223,17 +223,17 @@ sfDumpFile path = do
 dumpBuffer :: SFV.Buffer Double -> IO ()
 dumpBuffer = SV.mapM_ print . SFV.fromBuffer
 
-mapFrames_ :: forall a e . (SF.Sample e, Storable e, SF.Buffer a e)
-          => (a e -> IO ()) -> SF.Handle -> SF.Count -> IO ()
+mapFrames_ :: forall m a e . (MonadIO m, SF.Sample e, Storable e, SF.Buffer a e)
+          => (a e -> m ()) -> SF.Handle -> SF.Count -> m ()
 mapFrames_ f h n = do
-    p <- mallocBytes (sizeOf (undefined :: e) * numChannels * n)
-    fp <- newForeignPtr finalizerFree p
-    v <- SF.fromForeignPtr fp 0 (n * numChannels)
+    p <- liftIO $ mallocBytes (sizeOf (undefined :: e) * numChannels * n)
+    fp <- liftIO $ newForeignPtr finalizerFree p
+    v <- liftIO $ SF.fromForeignPtr fp 0 (n * numChannels)
     go p v
     where
        numChannels = SF.channels . SF.hInfo $ h
        go p v = do
-           n' <- SF.hGetBuf h p n
+           n' <- liftIO $ SF.hGetBuf h p n
            if n' == 0
                then return ()
                else do
