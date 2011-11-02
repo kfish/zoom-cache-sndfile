@@ -10,6 +10,7 @@ module Main (
 ) where
 
 import Control.Monad (foldM)
+import Control.Monad.State (execStateT)
 import Control.Monad.Trans (liftIO, MonadIO)
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
@@ -200,6 +201,38 @@ zoomSummaryHandler = do
 
 ------------------------------------------------------------
 
+encode :: Command ()
+encode = defCmd {
+          cmdName = "encode"
+        , cmdHandler = encodeHandler
+        , cmdCategory = "Reading"
+        , cmdShortDesc = "Encode a zoom-cache-pcm file from sndfile data"
+        , cmdExamples = [("Encode foo.wav", "foo.wav")]
+        }
+
+encodeHandler :: App () ()
+encodeHandler = mapM_ (liftIO . encodeFile) =<< appArgs
+
+encodeFile :: FilePath -> IO ()
+encodeFile path = do
+    h <- SF.openFile path SF.ReadMode info
+    let sfRate = fromIntegral (SF.samplerate . SF.hInfo $ h)
+
+    z <- openWrite (oneTrack ZDouble ConstantDR sfRate "pcm")
+             True -- doRaw
+             (path ++ ".zoom")
+    z' <- foldFrames encodeBuffer z h 1024
+    closeWrite z'
+
+    SF.hClose h
+    where
+        info = SF.Info 0 0 0 SF.defaultFormat 0 True
+
+encodeBuffer :: ZoomWHandle -> SFV.Buffer Double -> IO ZoomWHandle
+encodeBuffer z buf = execStateT (SV.mapM_ (write 1) . SFV.fromBuffer $ buf) z
+
+------------------------------------------------------------
+
 sfDump :: Command ()
 sfDump = defCmd {
           cmdName = "sfDump"
@@ -240,6 +273,23 @@ mapFrames_ f h n = do
                    f v
                    go p v
 
+foldFrames :: forall m a e b . (MonadIO m, SF.Sample e, Storable e, SF.Buffer a e)
+           => (b -> a e -> m b) -> b -> SF.Handle -> SF.Count -> m b
+foldFrames f z0 h n = do
+    p <- liftIO $ mallocBytes (sizeOf (undefined :: e) * numChannels * n)
+    fp <- liftIO $ newForeignPtr finalizerFree p
+    v <- liftIO $ SF.fromForeignPtr fp 0 (n * numChannels)
+    go p v z0
+    where
+       numChannels = SF.channels . SF.hInfo $ h
+       go p v z = do
+           n' <- liftIO $ SF.hGetBuf h p n
+           if n' == 0
+               then return z
+               else do
+                   z' <- f z v
+                   go p v z'
+
 ------------------------------------------------------------
 -- The Application
 --
@@ -259,6 +309,7 @@ zoom = def {
                     , zoomInfo
                     , zoomDump
                     , zoomSummary
+                    , encode
                     , sfDump
                     ]
 	}
