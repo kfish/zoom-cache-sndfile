@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -Wall #-}
 
 module Main (
@@ -12,11 +14,16 @@ import Control.Monad.Trans (liftIO)
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Default
-import System.Console.GetOpt
-import UI.Command
-
+import qualified Data.Vector.Storable as SV
 import Data.ZoomCache
 import Data.ZoomCache.Dump
+import qualified Sound.File.Sndfile as SF
+import qualified Sound.File.Sndfile.Buffer.Vector as SFV
+import System.Console.GetOpt
+import System.IO
+import UI.Command
+
+import Foreign
 
 ------------------------------------------------------------
 
@@ -192,6 +199,48 @@ zoomSummaryHandler = do
         f _ _ = putStrLn "Usage: zoom-cache summary n file.zxd"
 
 ------------------------------------------------------------
+
+sfDump :: Command ()
+sfDump = defCmd {
+          cmdName = "sfDump"
+        , cmdHandler = sfDumpHandler
+        , cmdCategory = "Reading"
+        , cmdShortDesc = "Read sndfile data"
+        , cmdExamples = [("Read foo.wav", "foo.wav")]
+        }
+
+sfDumpHandler :: App () ()
+sfDumpHandler = mapM_ (liftIO . sfDumpFile) =<< appArgs
+
+sfDumpFile :: FilePath -> IO ()
+sfDumpFile path = do
+    h <- SF.openFile path SF.ReadMode info
+    mapFrames_ dumpBuffer h 1024
+    SF.hClose h
+    where
+        info = SF.Info 0 0 0 SF.defaultFormat 0 True
+
+dumpBuffer :: SFV.Buffer Double -> IO ()
+dumpBuffer = SV.mapM_ print . SFV.fromBuffer
+
+mapFrames_ :: forall a e . (SF.Sample e, Storable e, SF.Buffer a e)
+          => (a e -> IO ()) -> SF.Handle -> SF.Count -> IO ()
+mapFrames_ f h n = do
+    p <- mallocBytes (sizeOf (undefined :: e) * numChannels * n)
+    fp <- newForeignPtr finalizerFree p
+    v <- SF.fromForeignPtr fp 0 (n * numChannels)
+    go p v
+    where
+       numChannels = SF.channels . SF.hInfo $ h
+       go p v = do
+           n' <- SF.hGetBuf h p n
+           if n' == 0
+               then return ()
+               else do
+                   f v
+                   go p v
+
+------------------------------------------------------------
 -- The Application
 --
 
@@ -210,6 +259,7 @@ zoom = def {
                     , zoomInfo
                     , zoomDump
                     , zoomSummary
+                    , sfDump
                     ]
 	}
 
