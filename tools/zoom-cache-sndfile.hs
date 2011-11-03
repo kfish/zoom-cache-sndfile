@@ -128,7 +128,7 @@ zoomGenHandler = do
 zoomWriteFile :: Config -> [FilePath] -> IO ()
 zoomWriteFile _          []       = return ()
 zoomWriteFile Config{..} (path:_)
-    | intData   = w ints path
+    | intData   = w pcmInts path
     | otherwise = w pcmDoubles path
     where
     w :: (ZoomReadable a, ZoomWrite a, ZoomWrite (TimeStamp, a))
@@ -147,6 +147,9 @@ zoomWriteFile Config{..} (path:_)
 
 pcmDoubles :: [PCM Double]
 pcmDoubles = map PCM doubles
+
+pcmInts :: [PCM Int]
+pcmInts = map PCM ints
 
 doubles :: [Double]
 doubles = take 10000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
