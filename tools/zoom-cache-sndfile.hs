@@ -152,10 +152,10 @@ pcmInts :: [PCM Int]
 pcmInts = map PCM ints
 
 doubles :: [Double]
-doubles = take 10000000 $ map ((* 1000.0) . sin) [0.0, 0.01 ..]
+doubles = take 10000000 $ map sin [0.0, 0.01 ..]
 
 ints :: [Int]
-ints = map round doubles
+ints = map (round . (* 32767.0)) doubles
 
 ------------------------------------------------------------
 
