@@ -12,8 +12,8 @@ module Main (
 import Control.Monad (foldM)
 import Control.Monad.State (execStateT)
 import Control.Monad.Trans (liftIO, MonadIO)
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LC
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as C
 import Data.Default
 import qualified Data.Vector.Storable as SV
 import Data.ZoomCache
@@ -33,7 +33,7 @@ data Config = Config
     { noRaw    :: Bool
     , variable :: Bool
     , intData  :: Bool
-    , label    :: L.ByteString
+    , label    :: ByteString
     , rate     :: Integer
     , wmLevel  :: Int
     , track    :: TrackNo
@@ -101,7 +101,7 @@ processConfig = foldM processOneOption
         processOneOption config IntData = do
             return $ config {intData = True}
         processOneOption config (Label s) = do
-            return $ config {label = LC.pack s}
+            return $ config {label = C.pack s}
         processOneOption config (Rate s) = do
             return $ config {rate = read s}
         processOneOption config (Watermark s) = do
