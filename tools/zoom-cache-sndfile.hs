@@ -22,7 +22,6 @@ import Data.ZoomCache.PCM
 import qualified Sound.File.Sndfile as SF
 import qualified Sound.File.Sndfile.Buffer.Vector as SFV
 import System.Console.GetOpt
-import System.IO
 import UI.Command
 
 import Foreign
