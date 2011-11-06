@@ -168,7 +168,7 @@ zoomInfo = defCmd {
         }
 
 zoomInfoHandler :: App () ()
-zoomInfoHandler = mapM_ (liftIO . zoomInfoFile pcmMappings) =<< appArgs
+zoomInfoHandler = mapM_ (liftIO . zoomInfoFile pcmIdentifiers) =<< appArgs
 
 ------------------------------------------------------------
 
@@ -184,7 +184,7 @@ zoomDump = defCmd {
 zoomDumpHandler :: App () ()
 zoomDumpHandler = do
     (config, filenames) <- liftIO . processArgs =<< appArgs
-    mapM_ (liftIO . zoomDumpFile pcmMappings (track config)) filenames
+    mapM_ (liftIO . zoomDumpFile pcmIdentifiers (track config)) filenames
 
 ------------------------------------------------------------
 
@@ -202,7 +202,7 @@ zoomSummaryHandler = do
     (config, filenames) <- liftIO . processArgs =<< appArgs
     liftIO . (f (track config)) $ filenames
     where
-        f trackNo (lvl:paths) = mapM_ (zoomDumpSummaryLevel pcmMappings trackNo (read lvl)) paths
+        f trackNo (lvl:paths) = mapM_ (zoomDumpSummaryLevel pcmIdentifiers trackNo (read lvl)) paths
         f _ _ = putStrLn "Usage: zoom-cache summary n file.zxd"
 
 ------------------------------------------------------------
