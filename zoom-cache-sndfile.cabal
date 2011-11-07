@@ -7,7 +7,10 @@ Version:             0.1.0.0
 
 Synopsis:            Tools for generating zoom-cache-pcm files
 
--- Description:         
+Description:
+    zoom-cache-sndfile provides tools for encoding and dumping zoom-cache-pcm files.
+    See the zoom-cache-pcm and zoom-cache packages for more information about
+    zoom-cache files.
 
 License:             LGPL-2.1
 License-file:        LGPL-2.1
