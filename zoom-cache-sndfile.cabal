@@ -19,7 +19,7 @@ Maintainer:          Conrad Parker <conrad@metadecks.org>
 Stability:           Experimental
 Category:            Sound
 
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 Build-type:          Simple
 
 flag splitBase
@@ -54,3 +54,10 @@ Executable zoom-cache-sndfile
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         
   
+------------------------------------------------------------------------
+-- Git repo
+--
+source-repository head
+  type: git
+  location: git://github.com/kfish/zoom-sndfile.git
+
