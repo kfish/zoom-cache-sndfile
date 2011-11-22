@@ -216,7 +216,8 @@ zoomSummaryHandler = do
     (config, filenames) <- liftIO . processArgs =<< appArgs
     liftIO . (f (track config)) $ filenames
     where
-        f trackNo (lvl:paths) = mapM_ (zoomDumpSummaryLevel pcmIdentifiers trackNo (read lvl)) paths
+        f trackNo (lvl:paths) = mapM_ (zoomDumpSummaryLevel (read lvl)
+                                       pcmIdentifiers trackNo) paths
         f _ _ = putStrLn "Usage: zoom-cache summary n file.zxd"
 
 ------------------------------------------------------------
