@@ -144,13 +144,13 @@ zoomWriteFile Config{..} (path:_)
     | intData   = w pcmInts path
     | otherwise = w pcmDoubles path
     where
-    w :: (ZoomReadable a, ZoomWrite a, ZoomWrite (TimeStamp, a))
+    w :: (ZoomReadable a, ZoomWrite a, ZoomWrite (SampleOffset, a))
       => [a] -> FilePath -> IO ()
     w d
-        | variable  = withFileWrite (oneTrack (head d) delta zlib VariableDR rate' label)
+        | variable  = withFileWrite (oneTrack (head d) delta zlib VariableSR rate' label)
                           (not noRaw)
-                          (sW >> mapM_ (write track) (zip (map TS [1,3..]) d))
-        | otherwise = withFileWrite (oneTrack (head d) delta zlib ConstantDR rate' label)
+                          (sW >> mapM_ (write track) (zip (map SO [1,3..]) d))
+        | otherwise = withFileWrite (oneTrack (head d) delta zlib ConstantSR rate' label)
                           (not noRaw)
                           (sW >> mapM_ (write track) d)
     rate' = fromInteger rate
@@ -242,7 +242,7 @@ encodeFile path = do
     z <- openWrite (oneTrack (undefined :: PCM Double)
              False -- delta
              False -- zlib
-             ConstantDR sfRate "pcm")
+             ConstantSR sfRate "pcm")
              True -- doRaw
              (path ++ ".zoom")
     z' <- foldFrames encodeBuffer z h 1024
