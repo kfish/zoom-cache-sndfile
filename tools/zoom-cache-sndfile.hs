@@ -18,6 +18,7 @@ import Data.Default
 import qualified Data.Vector.Storable as SV
 import Data.ZoomCache
 import Data.ZoomCache.Dump
+import Data.ZoomCache.List
 import Data.ZoomCache.PCM
 import qualified Sound.File.Sndfile as SF
 import qualified Sound.File.Sndfile.Buffer.Vector as SFV
@@ -237,23 +238,33 @@ encodeHandler = mapM_ (liftIO . encodeFile) =<< appArgs
 encodeFile :: FilePath -> IO ()
 encodeFile path = do
     h <- SF.openFile path SF.ReadMode info
-    let sfRate = fromIntegral (SF.samplerate . SF.hInfo $ h)
+    let sfInfo = SF.hInfo h
+        sfRate = fromIntegral . SF.samplerate $ sfInfo
+        sfChannels = fromIntegral . SF.channels $ sfInfo
 
-    z <- openWrite (oneTrack (undefined :: PCM Double)
+    z <- openWrite (oneTrackMultichannel
+             sfChannels
+             (undefined :: PCM Double)
              False -- delta
              False -- zlib
              ConstantSR sfRate "pcm")
              True -- doRaw
              (path ++ ".zoom")
-    z' <- foldFrames encodeBuffer z h 1024
+    z' <- foldFrames (encodeBuffer sfChannels) z h 1024
     closeWrite z'
 
     SF.hClose h
     where
         info = SF.Info 0 0 0 SF.defaultFormat 0 True
 
-encodeBuffer :: ZoomWHandle -> SFV.Buffer Double -> IO ZoomWHandle
-encodeBuffer z buf = execStateT (SV.mapM_ (write 1) . SFV.fromBuffer $ buf) z
+encodeBuffer :: Int -> ZoomWHandle -> SFV.Buffer Double -> IO ZoomWHandle
+encodeBuffer channels z buf = execStateT (encV . SFV.fromBuffer $ buf) z
+    where
+        encV :: SV.Vector Double -> ZoomW ()
+        encV v | SV.null v = return ()
+               | otherwise = do
+                   write 1 (map PCM . SV.toList . SV.take channels $ v)
+                   encV (SV.drop channels v)
 
 ------------------------------------------------------------
 
@@ -320,7 +331,7 @@ foldFrames f z0 h n = do
 
 zoom :: Application () ()
 zoom = def {
-          appName = "zoom"
+          appName = "zoom-cache-sndfile"
         , appVersion = "0.1"
         , appAuthors = ["Conrad Parker"]
         , appBugEmail = "conrad@metadecks.org"
