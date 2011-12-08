@@ -18,7 +18,7 @@ import Data.Default
 import qualified Data.Vector.Storable as SV
 import Data.ZoomCache
 import Data.ZoomCache.Dump
-import Data.ZoomCache.List
+import Data.ZoomCache.Multichannel
 import Data.ZoomCache.PCM
 import qualified Sound.File.Sndfile as SF
 import qualified Sound.File.Sndfile.Buffer.Vector as SFV
