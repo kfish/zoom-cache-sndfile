@@ -149,10 +149,10 @@ zoomWriteFile Config{..} (path:_)
       => [a] -> FilePath -> IO ()
     w d
         | variable  = withFileWrite (oneTrack (head d) delta zlib VariableSR rate' label)
-                          (not noRaw)
+                          Nothing (not noRaw)
                           (sW >> mapM_ (write track) (zip (map SO [1,3..]) d))
         | otherwise = withFileWrite (oneTrack (head d) delta zlib ConstantSR rate' label)
-                          (not noRaw)
+                          Nothing (not noRaw)
                           (sW >> mapM_ (write track) d)
     rate' = fromInteger rate
     sW = setWatermark 1 wmLevel
@@ -248,6 +248,7 @@ encodeFile path = do
              False -- delta
              False -- zlib
              ConstantSR sfRate "pcm")
+             Nothing -- baseUTC
              True -- doRaw
              (path ++ ".zoom")
     z' <- foldFrames (encodeBuffer sfChannels) z h 1024
