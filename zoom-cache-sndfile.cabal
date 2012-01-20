@@ -3,7 +3,7 @@ Name:                zoom-cache-sndfile
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             1.0.1.0
+Version:             1.1.0.0
 
 Synopsis:            Tools for generating zoom-cache-pcm files
 
@@ -47,8 +47,8 @@ Executable zoom-cache-sndfile
     mtl                       >= 2.0.0.0 && < 3,
     ui-command,
     vector,
-    zoom-cache                >= 1.0.0.0 && < 1.2.0.0,
-    zoom-cache-pcm            >= 0.2.0.0 && < 0.3
+    zoom-cache                >= 1.0.0.0 && < 1.3.0.0,
+    zoom-cache-pcm            >= 0.2.0.0 && < 0.4
   
   -- Other-modules:       
   
